@@ -38,8 +38,8 @@ function App() {
     // Nothing to do if no columns have changed
     if (addedKeys.length === 0 && removedKeys.length === 0) return previousColumns;
 
+    // Single column replacement - preserve order
     if (addedKeys.length === 1 && removedKeys.length === 1) {
-      // Single column replacement - preserve order
       const removedColumn = previousColumns.find(col => col.key === removedKeys[0])!;
       return currentKeys.map(key => 
         key === addedKeys[0]

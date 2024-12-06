@@ -4,10 +4,9 @@ import { importParquet, importCSV } from '../utils/fileHandlers';
 
 interface UseFileHandlersProps {
   setData: (data: Record<string, string>[]) => void;
-  setColumnOrder: (columns: string[]) => void;
 }
 
-export const useFileHandlers = ({ setData, setColumnOrder }: UseFileHandlersProps) => {
+export const useFileHandlers = ({ setData }: UseFileHandlersProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [wasmReady, setWasmReady] = useState(false);
 
@@ -25,9 +24,6 @@ export const useFileHandlers = ({ setData, setColumnOrder }: UseFileHandlersProp
     importParquet(file)
       .then(importedData => {
         setData(importedData);
-        if (importedData.length > 0) {
-          setColumnOrder(Object.keys(importedData[0]));
-        }
       })
       .catch(error => {
         console.error('Error importing Parquet file:', error);
@@ -47,9 +43,6 @@ export const useFileHandlers = ({ setData, setColumnOrder }: UseFileHandlersProp
     importCSV(file)
       .then(importedData => {
         setData(importedData);
-        if (importedData.length > 0) {
-          setColumnOrder(Object.keys(importedData[0]));
-        }
       })
       .catch(error => {
         console.error('Error importing CSV file:', error);

@@ -20,12 +20,10 @@ function App() {
   // State
   const [data, setData] = useState<Record<string, string>[]>(INITIAL_DATA);
   const [columns, setColumns] = useState<ColumnDef<Record<string, string>>[]>([]);
-  const [columnOrder, setColumnOrder] = useState<string[]>([]);
 
   // Hooks
   const { isLoading, wasmReady, handleParquetSelect, handleCSVSelect } = useFileHandlers({ 
     setData, 
-    setColumnOrder 
   });
   const { handleExportToCSV, handleExportToParquet } = useExportHandlers();
 
@@ -42,11 +40,7 @@ function App() {
     if (!newHeader.trim()) {
       return;
     }
-    
-    setColumnOrder(order => 
-      order.map(key => key === oldHeader ? newHeader : key)
-    );
-    
+        
     setData(old => old.map(row => {
       if (!(oldHeader in row)) return row;
       
@@ -61,11 +55,7 @@ function App() {
   useEffect(() => {
     if (data.length === 0) return;
 
-    if (columnOrder.length === 0) {
-      setColumnOrder(Object.keys(data[0]));
-    }
-
-    const newColumns: ColumnDef<Record<string, string>>[] = columnOrder.map(key => ({
+    const newColumns: ColumnDef<Record<string, string>>[] = Object.keys(data[0]).map(key => ({
       header: () => (
         <HeaderCell
           value={key}
@@ -82,7 +72,7 @@ function App() {
       )
     }));
     setColumns(newColumns);
-  }, [data, columnOrder]);
+  }, [data]);
 
   // Table configuration
   const table = useReactTable({

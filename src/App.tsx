@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useReactTable, getCoreRowModel, flexRender, ColumnDef } from '@tanstack/react-table';
 import './App.css';
-import { TableCell } from './components/TableCell';
-import { ColumnCell } from './types/types';
 import { ImportButton } from './components/ImportButton';
 import { ExportButton } from './components/ExportButton';
 import { ThemeToggle } from './components/ThemeToggle';
 import { useFileHandlers } from './hooks/useFileHandlers';
 import { useExportHandlers } from './hooks/useExportHandlers';
-import { HeaderCell } from './components/HeaderCell';
+import { ReactTable } from './components/ReactTable';
+import { Column } from './types/types';
 
 // Constants
 const INITIAL_DATA = [{
@@ -19,73 +17,30 @@ const INITIAL_DATA = [{
 function App() {
   // State
   const [data, setData] = useState<Record<string, string>[]>(INITIAL_DATA);
-  const [columns, setColumns] = useState<ColumnDef<Record<string, string>>[]>([]);
+  const [columns, setColumns] = useState<Column[]>([]);
 
   // Hooks
-  const { isLoading, wasmReady, handleParquetSelect, handleCSVSelect } = useFileHandlers({ 
-    setData, 
+  const { isLoading, wasmReady, handleParquetSelect, handleCSVSelect } = useFileHandlers({
+    setData,
   });
   const { handleExportToCSV, handleExportToParquet } = useExportHandlers();
-
-  // Handlers
-  const handleCellEdit = (rowIndex: number, columnId: string, value: string) => {
-    setData(old =>
-      old.map((row, index) => 
-        index === rowIndex ? { ...row, [columnId]: value } : row
-      )
-    );
-  };
-
-  const handleHeaderEdit = (oldHeader: string, newHeader: string) => {
-    if (!newHeader.trim()) {
-      return;
-    }
-        
-    setData(old => old.map(row => {
-      if (!(oldHeader in row)) return row;
-      
-      const newRow = { ...row };
-      newRow[newHeader] = newRow[oldHeader];
-      delete newRow[oldHeader];
-      return newRow;
-    }));
-  };
 
   // Effects
   useEffect(() => {
     if (data.length === 0) return;
 
-    const newColumns: ColumnDef<Record<string, string>>[] = Object.keys(data[0]).map(key => ({
-      header: () => (
-        <HeaderCell
-          value={key}
-          onEdit={(newValue) => handleHeaderEdit(key, newValue)}
-        />
-      ),
-      accessorKey: key,
-      cell: (props) => (
-        <TableCell
-          cellProps={props as ColumnCell}
-          onEdit={handleCellEdit}
-          value={props.getValue()?.toString() ?? ''}
-        />
-      )
+    const newColumns: Column[] = Object.keys(data[0]).map((key, index) => ({
+      key,
+      order: index
     }));
+    
     setColumns(newColumns);
   }, [data]);
 
-  // Table configuration
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
-  // Render
   return (
     <div className="container">
       <h1>Parquet Viewer and Editor</h1>
-      
+
       <div className="button-group">
         <ImportButton
           label="Import Parquet"
@@ -114,34 +69,12 @@ function App() {
         <ThemeToggle />
       </div>
 
-      <div className="table-wrapper">
-        <table>
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ReactTable 
+        data={data} 
+        columns={columns}
+        setData={setData}
+      />
+
     </div>
   );
 }

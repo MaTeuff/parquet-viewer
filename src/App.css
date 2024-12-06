@@ -1,6 +1,5 @@
 .table-container {
   padding: 2rem;
-  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -34,4 +33,65 @@ th, td {
 
 th {
   background-color: #f4f4f4;
+}
+
+.container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+  text-align: center;
+}
+
+.table-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* Optional: Add some spacing and borders to make the table more visible */
+th, td {
+  padding: 8px;
+  border: 1px solid #ddd;
+}
+
+.table-cell-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 4px;
+}
+
+.export-button {
+  margin: 20px 0;
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.export-button:hover {
+  background-color: #45a049;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.button-group .export-button:nth-child(2) {
+  background-color: #2196F3;
+}
+
+.button-group .export-button:nth-child(2):hover {
+  background-color: #1976D2;
 }

@@ -5,6 +5,8 @@ import { TableCell } from './components/TableCell';
 import { ColumnCell } from './types/types';
 import './App.css';
 import { exportToCSV, exportToParquet, importParquet, importCSV } from './utils/fileHandlers';
+import { ImportButton } from './components/ImportButton';
+import { ExportButton } from './components/ExportButton';
 
 const generateInitialData = () => [{
   field1: 'Sample Value 1',
@@ -119,46 +121,30 @@ function App() {
     <div className="container">
       <h1>Parquet Viewer and Editor</h1>
       <div className="button-group">
-        <label 
-          className="import-button" 
-          style={{ opacity: wasmReady && !isLoading ? 1 : 0.5 }}
-        >
-          {isLoading ? 'Importing...' : 'Import Parquet'}
-          <input
-            type="file"
-            accept=".parquet"
-            onChange={handleParquetSelect}
-            disabled={!wasmReady || isLoading}
-            style={{ display: 'none' }}
-          />
-        </label>
-        <label 
-          className="import-button" 
-          style={{ opacity: !isLoading ? 1 : 0.5 }}
-        >
-          {isLoading ? 'Importing...' : 'Import CSV'}
-          <input
-            type="file"
-            accept=".csv"
-            onChange={handleCSVSelect}
-            disabled={isLoading}
-            style={{ display: 'none' }}
-          />
-        </label>
-        <button 
-          onClick={handleExportToCSV} 
-          className="export-button"
-          disabled={isLoading}
-        >
-          Export as CSV
-        </button>
-        <button 
-          onClick={handleExportToParquet} 
-          className="export-button"
+        <ImportButton
+          label="Import Parquet"
+          accept=".parquet"
+          isLoading={isLoading}
           disabled={!wasmReady || isLoading}
-        >
-          Export as Parquet
-        </button>
+          onFileSelect={handleParquetSelect}
+        />
+        <ImportButton
+          label="Import CSV"
+          accept=".csv"
+          isLoading={isLoading}
+          disabled={isLoading}
+          onFileSelect={handleCSVSelect}
+        />
+        <ExportButton
+          label="Export as CSV"
+          disabled={isLoading}
+          onClick={handleExportToCSV}
+        />
+        <ExportButton
+          label="Export as Parquet"
+          disabled={!wasmReady || isLoading}
+          onClick={handleExportToParquet}
+        />
       </div>
       <div className="table-wrapper">
         <table>

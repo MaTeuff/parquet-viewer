@@ -66,49 +66,46 @@ th, td {
   padding: 4px;
 }
 
-.export-button {
-  margin: 20px 0;
-  padding: 8px 16px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.export-button:hover {
-  background-color: #45a049;
-}
-
 .button-group {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
-.button-group .export-button:nth-child(2) {
-  background-color: #2196F3;
+.button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.button-group .export-button:nth-child(2):hover {
-  background-color: #1976D2;
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.import-button {
-  padding: 8px 16px;
+.button--import {
   background-color: #4CAF50;
   color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: opacity 0.3s;
 }
 
-.import-button:hover {
+.button--import:hover:not(:disabled) {
   background-color: #45a049;
 }
 
-.import-button:disabled {
-  cursor: not-allowed;
+.button--export {
+  background-color: #2196F3;
+  color: white;
+}
+
+.button--export:hover:not(:disabled) {
+  background-color: #1976D2;
 }

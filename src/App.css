@@ -84,8 +84,7 @@ th, td {
 .button-group {
   display: flex;
   gap: 10px;
-  justify-content: center;
-  margin: 20px 0;
+  margin-bottom: 20px;
 }
 
 .button-group .export-button:nth-child(2) {
@@ -97,16 +96,19 @@ th, td {
 }
 
 .import-button {
+  padding: 8px 16px;
   background-color: #4CAF50;
   color: white;
-  padding: 10px 20px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 16px;
-  margin: 0 5px;
+  transition: opacity 0.3s;
 }
 
 .import-button:hover {
   background-color: #45a049;
+}
+
+.import-button:disabled {
+  cursor: not-allowed;
 }

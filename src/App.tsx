@@ -9,7 +9,7 @@ import initWasm, {
   readParquet,
 } from 'parquet-wasm';
 import { TableCell } from './components/TableCell';
-import { Car, ColumnCell } from './types/types';
+import { ColumnCell } from './types/types';
 import './App.css';
 
 const generateInitialData = () => [{
@@ -35,9 +35,9 @@ function App() {
         header: key,
         accessorKey: key,
         cell: (props) => (
-          <TableCell 
-            cellProps={props as ColumnCell} 
-            onEdit={handleCellEdit} 
+          <TableCell
+            cellProps={props as ColumnCell}
+            onEdit={handleCellEdit}
           />
         )
       }));
@@ -67,11 +67,11 @@ function App() {
 
   const exportToCSV = () => {
     if (data.length === 0) return;
-    
+
     const headers = Object.keys(data[0]).join(',');
     const rows = data.map(item => Object.values(item).join(',')).join('\n');
     const csv = `${headers}\n${rows}`;
-    
+
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -136,18 +136,65 @@ function App() {
     }
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setIsLoading(true);
-      importParquet(file)
-        .catch(error => {
-          console.error('Error importing file:', error);
-          alert('Error importing file. Check console for details.');
-        })
-        .finally(() => setIsLoading(false));
+  const importCSV = async (file: File) => {
+    try {
+      const text = await file.text();
+      const lines = text.split('\n');
+      const headers = lines[0].split(',').map(header => header.trim());
+      
+      const importedData: Record<string, string>[] = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue; // Skip empty lines
+        
+        const values = lines[i].split(',').map(value => value.trim());
+        const row: Record<string, string> = {};
+        
+        headers.forEach((header, index) => {
+          row[header] = values[index] || '';
+        });
+        
+        importedData.push(row);
+      }
+
+      setData(importedData);
+      return importedData;
+    } catch (error) {
+      console.error('CSV import error:', error);
+      throw error;
     }
-    event.target.value = '';
+  };
+
+  const handleParquetSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsLoading(true);
+    importParquet(file)
+      .catch(error => {
+        console.error('Error importing Parquet file:', error);
+        alert('Error importing Parquet file. Check console for details.');
+      })
+      .finally(() => {
+        setIsLoading(false);
+        event.target.value = '';
+      });
+  };
+
+  const handleCSVSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsLoading(true);
+    importCSV(file)
+      .catch(error => {
+        console.error('Error importing CSV file:', error);
+        alert('Error importing CSV file. Check console for details.');
+      })
+      .finally(() => {
+        setIsLoading(false);
+        event.target.value = '';
+      });
   };
 
   return (
@@ -162,8 +209,21 @@ function App() {
           <input
             type="file"
             accept=".parquet"
-            onChange={handleFileSelect}
+            onChange={handleParquetSelect}
             disabled={!wasmReady || isLoading}
+            style={{ display: 'none' }}
+          />
+        </label>
+        <label 
+          className="import-button" 
+          style={{ opacity: !isLoading ? 1 : 0.5 }}
+        >
+          {isLoading ? 'Importing...' : 'Import CSV'}
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleCSVSelect}
+            disabled={isLoading}
             style={{ display: 'none' }}
           />
         </label>
@@ -177,7 +237,7 @@ function App() {
         <button 
           onClick={exportToParquet} 
           className="export-button"
-          disabled={isLoading}
+          disabled={!wasmReady || isLoading}
         >
           Export as Parquet
         </button>

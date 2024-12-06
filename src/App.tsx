@@ -25,53 +25,58 @@ function App() {
   });
   const { handleExportToCSV, handleExportToParquet } = useExportHandlers();
 
-  // Effects
+  const updateColumnsFromData = (
+    currentKeys: string[], 
+    previousColumns: Column[]
+  ): Column[] => {
+    const previousKeys = previousColumns.map(col => col.key);
+    
+    // Identify added and removed columns
+    const addedKeys = currentKeys.filter(key => !previousKeys.includes(key));
+    const removedKeys = previousKeys.filter(key => !currentKeys.includes(key));
+
+    // Nothing to do if no columns have changed
+    if (addedKeys.length === 0 && removedKeys.length === 0) return previousColumns;
+
+    if (addedKeys.length === 1 && removedKeys.length === 1) {
+      // Single column replacement - preserve order
+      const removedColumn = previousColumns.find(col => col.key === removedKeys[0])!;
+      return currentKeys.map(key => 
+        key === addedKeys[0]
+          ? { key, order: removedColumn.order }
+          : previousColumns.find(col => col.key === key)!
+      );
+    }
+
+    // Multiple columns changed - reset all column orders
+    if (addedKeys.length > 1 || removedKeys.length > 1) {
+      return currentKeys.map((key, index) => ({ key, order: index }));
+    }
+
+    // Handle added or removed columns while preserving existing orders
+    const maxOrder = Math.max(...previousColumns.map(col => col.order), -1);
+    return currentKeys.map(key => {
+      const existingColumn = previousColumns.find(col => col.key === key);
+      return existingColumn || { key, order: maxOrder + 1 };
+    });
+  };
+
   useEffect(() => {
     if (data.length === 0) return;
 
+    // Initialize columns if none exist
     if (columns.length === 0) {
       setColumns(Object.keys(data[0]).map((key, index) => ({ key, order: index })));
       return;
     }
 
     const currentKeys = Object.keys(data[0]);
-    const previousKeys = columns.map(col => col.key);
-
-    // If keys are the same, no need to update
-    if (currentKeys.length === previousKeys.length &&
-      currentKeys.every(key => previousKeys.includes(key))) {
-      return;
+    const updatedColumns = updateColumnsFromData(currentKeys, columns);
+    
+    // Only update if columns have changed
+    if (updatedColumns !== columns) {
+      setColumns(updatedColumns);
     }
-    console.log(currentKeys, previousKeys);
-
-    // Find added and removed columns
-    const addedKeys = currentKeys.filter(key => !previousKeys.includes(key));
-    const removedKeys = previousKeys.filter(key => !currentKeys.includes(key));
-    console.log(addedKeys, removedKeys);
-    console.log(columns);
-    let newColumns: Column[] = [];
-
-    if (addedKeys.length > 1 || removedKeys.length > 1) {
-      newColumns = currentKeys.map((key, index) => ({ key, order: index }));
-    } else if (addedKeys.length === 1 && removedKeys.length === 1) {
-      // If exactly one column was replaced, new column takes the order of the removed one
-      const removedColumn = columns.find(col => col.key === removedKeys[0])!;
-      newColumns = currentKeys.map(key => {
-        if (key === addedKeys[0]) {
-          return { key, order: removedColumn.order };
-        }
-        return columns.find(col => col.key === key)!;
-      });
-    } else {
-      // Otherwise, preserve existing orders and add new columns at the end
-      const maxOrder = Math.max(...columns.map(col => col.order), -1);
-      newColumns = currentKeys.map(key => {
-        const existingColumn = columns.find(col => col.key === key);
-        return existingColumn || { key, order: maxOrder + 1 };
-      });
-    }
-    console.log(newColumns);
-    setColumns(newColumns);
   }, [data]);
 
   return (

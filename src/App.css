@@ -190,3 +190,25 @@ tr:last-child td:first-child {
 tr:last-child td:last-child {
   border-bottom-right-radius: 8px;
 }
+
+/* Add these new styles */
+.header-cell-input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid var(--hover-border-color);
+  border-radius: 4px;
+  background-color: var(--input-bg-color);
+  color: var(--text-color);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.header-cell-input:focus {
+  border-color: var(--focus-border-color);
+  outline: none;
+}
+
+th {
+  cursor: pointer;
+}

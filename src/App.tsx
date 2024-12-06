@@ -8,6 +8,7 @@ import { ExportButton } from './components/ExportButton';
 import { ThemeToggle } from './components/ThemeToggle';
 import { useFileHandlers } from './hooks/useFileHandlers';
 import { useExportHandlers } from './hooks/useExportHandlers';
+import { HeaderCell } from './components/HeaderCell';
 
 const generateInitialData = () => [{
   field1: 'Sample Value 1',
@@ -17,13 +18,39 @@ const generateInitialData = () => [{
 function App() {
   const [data, setData] = useState<Record<string, string>[]>(generateInitialData());
   const [columns, setColumns] = useState<ColumnDef<Record<string, string>>[]>([]);
-  const { isLoading, wasmReady, handleParquetSelect, handleCSVSelect } = useFileHandlers({ setData });
+  const [columnOrder, setColumnOrder] = useState<string[]>([]);
+  const { isLoading, wasmReady, handleParquetSelect, handleCSVSelect } = useFileHandlers({ 
+    setData, 
+    setColumnOrder 
+  });
   const { handleExportToCSV, handleExportToParquet } = useExportHandlers();
+
+  const handleHeaderEdit = (oldHeader: string, newHeader: string) => {
+    setColumnOrder(order => order.map(key => key === oldHeader ? newHeader : key));
+    
+    setData(old => old.map(row => {
+      const newRow = { ...row };
+      if (oldHeader in newRow) {
+        newRow[newHeader] = newRow[oldHeader];
+        delete newRow[oldHeader];
+      }
+      return newRow;
+    }));
+  };
 
   useEffect(() => {
     if (data.length > 0) {
-      const newColumns: ColumnDef<Record<string, string>>[] = Object.keys(data[0]).map(key => ({
-        header: key,
+      if (columnOrder.length === 0) {
+        setColumnOrder(Object.keys(data[0]));
+      }
+
+      const newColumns: ColumnDef<Record<string, string>>[] = columnOrder.map(key => ({
+        header: () => (
+          <HeaderCell
+            value={key}
+            onEdit={(newValue) => handleHeaderEdit(key, newValue)}
+          />
+        ),
         accessorKey: key,
         cell: (props) => (
           <TableCell
@@ -34,7 +61,7 @@ function App() {
       }));
       setColumns(newColumns);
     }
-  }, [data]);
+  }, [data, columnOrder]);
 
   const handleCellEdit = (rowIndex: number, columnId: string, value: string) => {
     setData(old =>

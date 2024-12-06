@@ -16,10 +16,6 @@ export const TableCell: React.FC<TableCellProps> = ({ cellProps, onEdit, value }
     setEditValue(cellProps.getValue()?.toString() ?? '');
   }, [cellProps]);
 
-  const handleDoubleClick = () => {
-    setIsEditing(true);
-  };
-
   const handleBlur = () => {
     setIsEditing(false);
     if (editValue !== cellProps.getValue()?.toString()) {

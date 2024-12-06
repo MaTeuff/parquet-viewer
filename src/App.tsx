@@ -12,34 +12,38 @@ import { TableCell } from './components/TableCell';
 import { Car, ColumnCell } from './types/types';
 import './App.css';
 
-const initialData: Car[] = [
-  {
-    manufacturer: 'Toyota',
-    color: 'Red',
-    engine: '2.0L 4-cylinder',
-  },
-  {
-    manufacturer: 'BMW',
-    color: 'Black',
-    engine: '3.0L 6-cylinder',
-  },
-  {
-    manufacturer: 'Tesla',
-    color: 'White',
-    engine: 'Dual Motor Electric',
-  },
-];
+const generateInitialData = () => [{
+  field1: 'Sample Value 1',
+  field2: 'Sample Value 2',
+}];
 
 function App() {
   const [wasmReady, setWasmReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState<Car[]>(initialData);
+  const [data, setData] = useState<Record<string, string>[]>(generateInitialData());
+  const [columns, setColumns] = useState<ColumnDef<Record<string, string>>[]>([]);
 
   useEffect(() => {
     initWasm()
       .then(() => setWasmReady(true))
       .catch(error => console.error('WASM initialization failed:', error));
   }, []);
+
+  useEffect(() => {
+    if (data.length > 0) {
+      const newColumns: ColumnDef<Record<string, string>>[] = Object.keys(data[0]).map(key => ({
+        header: key,
+        accessorKey: key,
+        cell: (props) => (
+          <TableCell 
+            cellProps={props as ColumnCell} 
+            onEdit={handleCellEdit} 
+          />
+        )
+      }));
+      setColumns(newColumns);
+    }
+  }, [data]);
 
   const handleCellEdit = (rowIndex: number, columnId: string, value: string) => {
     setData(old =>
@@ -55,24 +59,6 @@ function App() {
     );
   };
 
-  const columns: ColumnDef<Car>[] = [
-    {
-      header: 'Manufacturer',
-      accessorKey: 'manufacturer',
-      cell: (props) => <TableCell cellProps={props as ColumnCell} onEdit={handleCellEdit} />
-    },
-    {
-      header: 'Color',
-      accessorKey: 'color',
-      cell: (props) => <TableCell cellProps={props as ColumnCell} onEdit={handleCellEdit} />
-    },
-    {
-      header: 'Engine',
-      accessorKey: 'engine',
-      cell: (props) => <TableCell cellProps={props as ColumnCell} onEdit={handleCellEdit} />
-    },
-  ];
-
   const table = useReactTable({
     data,
     columns,
@@ -80,7 +66,9 @@ function App() {
   });
 
   const exportToCSV = () => {
-    const headers = columns.map(col => col.header).join(',');
+    if (data.length === 0) return;
+    
+    const headers = Object.keys(data[0]).join(',');
     const rows = data.map(item => Object.values(item).join(',')).join('\n');
     const csv = `${headers}\n${rows}`;
     
@@ -95,12 +83,14 @@ function App() {
 
   const exportToParquet = async () => {
     try {
-      const table = arrow.tableFromArrays({
-        manufacturer: data.map(row => row.manufacturer),
-        color: data.map(row => row.color),
-        engine: data.map(row => row.engine)
+      if (data.length === 0) return;
+
+      const arrowData: Record<string, string[]> = {};
+      Object.keys(data[0]).forEach(key => {
+        arrowData[key] = data.map(row => row[key]);
       });
 
+      const table = arrow.tableFromArrays(arrowData);
       const wasmTable = Table.fromIPCStream(arrow.tableToIPC(table, 'stream'));
       const writerProperties = new WriterPropertiesBuilder()
         .setCompression(Compression.ZSTD)
@@ -127,13 +117,15 @@ function App() {
       const parquetTable = readParquet(uint8Array);
       const arrowTable = arrow.tableFromIPC(parquetTable.intoIPCStream());
 
-      const importedData: Car[] = [];
+      const importedData: Record<string, string>[] = [];
+      const columnNames = arrowTable.schema.fields.map(f => f.name);
+
       for (let i = 0; i < arrowTable.numRows; i++) {
-        importedData.push({
-          manufacturer: arrowTable.getChild('manufacturer')?.get(i)?.toString() || '',
-          color: arrowTable.getChild('color')?.get(i)?.toString() || '',
-          engine: arrowTable.getChild('engine')?.get(i)?.toString() || ''
+        const row: Record<string, string> = {};
+        columnNames.forEach(colName => {
+          row[colName] = arrowTable.getChild(colName)?.get(i)?.toString() || '';
         });
+        importedData.push(row);
       }
 
       setData(importedData);

@@ -1,11 +1,7 @@
-export interface Car {
-  manufacturer: string;
-  color: string;
-  engine: string;
-}
+import { Cell, Row } from "@tanstack/react-table";
 
 export interface ColumnCell {
-  row: { index: number };
+  getValue: () => any;
+  row: Row<Record<string, string>>;
   column: { id: string };
-  getValue: () => string;
 } 

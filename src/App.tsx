@@ -10,82 +10,87 @@ import { useFileHandlers } from './hooks/useFileHandlers';
 import { useExportHandlers } from './hooks/useExportHandlers';
 import { HeaderCell } from './components/HeaderCell';
 
-const generateInitialData = () => [{
+// Constants
+const INITIAL_DATA = [{
   field1: 'Sample Value 1',
   field2: 'Sample Value 2',
 }];
 
 function App() {
-  const [data, setData] = useState<Record<string, string>[]>(generateInitialData());
+  // State
+  const [data, setData] = useState<Record<string, string>[]>(INITIAL_DATA);
   const [columns, setColumns] = useState<ColumnDef<Record<string, string>>[]>([]);
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
+
+  // Hooks
   const { isLoading, wasmReady, handleParquetSelect, handleCSVSelect } = useFileHandlers({ 
     setData, 
     setColumnOrder 
   });
   const { handleExportToCSV, handleExportToParquet } = useExportHandlers();
 
+  // Handlers
+  const handleCellEdit = (rowIndex: number, columnId: string, value: string) => {
+    setData(old =>
+      old.map((row, index) => 
+        index === rowIndex ? { ...row, [columnId]: value } : row
+      )
+    );
+  };
+
   const handleHeaderEdit = (oldHeader: string, newHeader: string) => {
-    setColumnOrder(order => order.map(key => key === oldHeader ? newHeader : key));
+    setColumnOrder(order => 
+      order.map(key => key === oldHeader ? newHeader : key)
+    );
     
     setData(old => old.map(row => {
+      if (!(oldHeader in row)) return row;
+      
       const newRow = { ...row };
-      if (oldHeader in newRow) {
-        newRow[newHeader] = newRow[oldHeader];
-        delete newRow[oldHeader];
-      }
+      newRow[newHeader] = newRow[oldHeader];
+      delete newRow[oldHeader];
       return newRow;
     }));
   };
 
+  // Effects
   useEffect(() => {
-    if (data.length > 0) {
-      if (columnOrder.length === 0) {
-        setColumnOrder(Object.keys(data[0]));
-      }
+    if (data.length === 0) return;
 
-      const newColumns: ColumnDef<Record<string, string>>[] = columnOrder.map(key => ({
-        header: () => (
-          <HeaderCell
-            value={key}
-            onEdit={(newValue) => handleHeaderEdit(key, newValue)}
-          />
-        ),
-        accessorKey: key,
-        cell: (props) => (
-          <TableCell
-            cellProps={props as ColumnCell}
-            onEdit={handleCellEdit}
-          />
-        )
-      }));
-      setColumns(newColumns);
+    if (columnOrder.length === 0) {
+      setColumnOrder(Object.keys(data[0]));
     }
+
+    const newColumns: ColumnDef<Record<string, string>>[] = columnOrder.map(key => ({
+      header: () => (
+        <HeaderCell
+          value={key}
+          onEdit={(newValue) => handleHeaderEdit(key, newValue)}
+        />
+      ),
+      accessorKey: key,
+      cell: (props) => (
+        <TableCell
+          cellProps={props as ColumnCell}
+          onEdit={handleCellEdit}
+        />
+      )
+    }));
+    setColumns(newColumns);
   }, [data, columnOrder]);
 
-  const handleCellEdit = (rowIndex: number, columnId: string, value: string) => {
-    setData(old =>
-      old.map((row, index) => {
-        if (index === rowIndex) {
-          return {
-            ...row,
-            [columnId]: value,
-          };
-        }
-        return row;
-      })
-    );
-  };
-
+  // Table configuration
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
 
+  // Render
   return (
     <div className="container">
       <h1>Parquet Viewer and Editor</h1>
+      
       <div className="button-group">
         <ImportButton
           label="Import Parquet"
@@ -113,6 +118,7 @@ function App() {
         />
         <ThemeToggle />
       </div>
+
       <div className="table-wrapper">
         <table>
           <thead>

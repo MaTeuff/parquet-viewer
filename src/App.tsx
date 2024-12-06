@@ -7,6 +7,7 @@ import './App.css';
 import { exportToCSV, exportToParquet, importParquet, importCSV } from './utils/fileHandlers';
 import { ImportButton } from './components/ImportButton';
 import { ExportButton } from './components/ExportButton';
+import { ThemeToggle } from './components/ThemeToggle';
 
 const generateInitialData = () => [{
   field1: 'Sample Value 1',
@@ -145,6 +146,7 @@ function App() {
           disabled={!wasmReady || isLoading}
           onClick={handleExportToParquet}
         />
+        <ThemeToggle />
       </div>
       <div className="table-wrapper">
         <table>

@@ -5,49 +5,55 @@ interface HeaderCellProps {
   onEdit: (newValue: string) => void;
 }
 
-export const HeaderCell = ({ value, onEdit }: HeaderCellProps) => {
+export const HeaderCell: React.FC<HeaderCellProps> = ({ value, onEdit }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value);
+  const [editValue, setEditValue] = useState(value || 'New Column');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isEditing]);
-
-  const handleDoubleClick = () => {
+  const handleClick = () => {
     setIsEditing(true);
   };
 
   const handleBlur = () => {
     setIsEditing(false);
-    if (editValue.trim() !== value) {
-      onEdit(editValue.trim());
+    const trimmedValue = editValue.trim();
+    if (trimmedValue && trimmedValue !== value) {
+      onEdit(trimmedValue);
+    } else {
+      setEditValue(value || 'New Column');  // Reset to original or default value
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      handleBlur();
+      inputRef.current?.blur();
     } else if (e.key === 'Escape') {
-      setEditValue(value);
+      setEditValue(value || 'New Column');
       setIsEditing(false);
     }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditValue(e.target.value);
   };
 
   if (isEditing) {
     return (
       <input
         ref={inputRef}
-        className="header-cell-input"
         value={editValue}
-        onChange={(e) => setEditValue(e.target.value)}
+        onChange={handleChange}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
+        autoFocus
+        className="header-input"
       />
     );
   }
 
-  return <div onDoubleClick={handleDoubleClick}>{value}</div>;
+  return (
+    <div onClick={handleClick} className="header-cell">
+      {value || 'New Column'}
+    </div>
+  );
 }; 

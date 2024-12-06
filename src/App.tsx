@@ -12,8 +12,8 @@ import { HeaderCell } from './components/HeaderCell';
 
 // Constants
 const INITIAL_DATA = [{
-  field1: 'Sample Value 1',
-  field2: 'Sample Value 2',
+  'Column 1': '',
+  'Column 2': '',
 }];
 
 function App() {
@@ -39,6 +39,10 @@ function App() {
   };
 
   const handleHeaderEdit = (oldHeader: string, newHeader: string) => {
+    if (!newHeader.trim()) {
+      return;
+    }
+    
     setColumnOrder(order => 
       order.map(key => key === oldHeader ? newHeader : key)
     );
@@ -73,6 +77,7 @@ function App() {
         <TableCell
           cellProps={props as ColumnCell}
           onEdit={handleCellEdit}
+          value={props.getValue()?.toString() ?? ''}
         />
       )
     }));

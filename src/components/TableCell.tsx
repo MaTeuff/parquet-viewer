@@ -4,15 +4,16 @@ import { ColumnCell } from '../types/types';
 interface TableCellProps {
   cellProps: ColumnCell;
   onEdit: (rowIndex: number, columnId: string, value: string) => void;
+  value: string;
 }
 
-export function TableCell({ cellProps, onEdit }: TableCellProps) {
+export const TableCell: React.FC<TableCellProps> = ({ cellProps, onEdit, value }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [value, setValue] = useState<string>('');
+  const [editValue, setEditValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    setValue(cellProps.getValue()?.toString() ?? '');
+    setEditValue(cellProps.getValue()?.toString() ?? '');
   }, [cellProps]);
 
   const handleDoubleClick = () => {
@@ -21,8 +22,8 @@ export function TableCell({ cellProps, onEdit }: TableCellProps) {
 
   const handleBlur = () => {
     setIsEditing(false);
-    if (value !== cellProps.getValue()?.toString()) {
-      onEdit(cellProps.row.index, cellProps.column.id, value);
+    if (editValue !== cellProps.getValue()?.toString()) {
+      onEdit(cellProps.row.index, cellProps.column.id, editValue);
     }
   };
 
@@ -30,20 +31,24 @@ export function TableCell({ cellProps, onEdit }: TableCellProps) {
     if (e.key === 'Enter') {
       inputRef.current?.blur();
     } else if (e.key === 'Escape') {
-      setValue(cellProps.getValue()?.toString() ?? '');
+      setEditValue(cellProps.getValue()?.toString() ?? '');
       setIsEditing(false);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(e.target.value);
+    setEditValue(e.target.value);
+  };
+
+  const handleClick = () => {
+    setIsEditing(true);
   };
 
   if (isEditing) {
     return (
       <input
         ref={inputRef}
-        value={value}
+        value={editValue}
         onChange={handleChange}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
@@ -54,12 +59,8 @@ export function TableCell({ cellProps, onEdit }: TableCellProps) {
   }
 
   return (
-    <div 
-      onDoubleClick={handleDoubleClick}
-      className="cell-content"
-      title="Double click to edit"
-    >
-      {value}
+    <div onClick={handleClick}>
+      {editValue || '\u00A0'}
     </div>
   );
-} 
+}; 

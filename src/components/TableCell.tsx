@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ColumnCell } from '../types/types';
 
 interface TableCellProps {
@@ -9,8 +9,8 @@ interface TableCellProps {
 export function TableCell({ cellProps, onEdit }: TableCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [value, setValue] = useState<string>('');
+  const inputRef = useRef<HTMLInputElement>(null);
   
-  // Initialize value when the cell data changes
   useEffect(() => {
     setValue(cellProps.getValue()?.toString() ?? '');
   }, [cellProps]);
@@ -21,7 +21,18 @@ export function TableCell({ cellProps, onEdit }: TableCellProps) {
 
   const handleBlur = () => {
     setIsEditing(false);
-    onEdit(cellProps.row.index, cellProps.column.id, value);
+    if (value !== cellProps.getValue()?.toString()) {
+      onEdit(cellProps.row.index, cellProps.column.id, value);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      inputRef.current?.blur();
+    } else if (e.key === 'Escape') {
+      setValue(cellProps.getValue()?.toString() ?? '');
+      setIsEditing(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,13 +42,24 @@ export function TableCell({ cellProps, onEdit }: TableCellProps) {
   if (isEditing) {
     return (
       <input
+        ref={inputRef}
         value={value}
         onChange={handleChange}
         onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
         autoFocus
+        className="cell-input"
       />
     );
   }
 
-  return <div onDoubleClick={handleDoubleClick}>{value}</div>;
+  return (
+    <div 
+      onDoubleClick={handleDoubleClick}
+      className="cell-content"
+      title="Double click to edit"
+    >
+      {value}
+    </div>
+  );
 } 

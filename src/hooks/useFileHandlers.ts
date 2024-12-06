@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import initWasm from 'parquet-wasm';
 import { importParquet, importCSV } from '../utils/fileHandlers';
 
 interface UseFileHandlersProps {
@@ -7,6 +8,13 @@ interface UseFileHandlersProps {
 
 export const useFileHandlers = ({ setData }: UseFileHandlersProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [wasmReady, setWasmReady] = useState(false);
+
+  useEffect(() => {
+    initWasm()
+      .then(() => setWasmReady(true))
+      .catch(error => console.error('WASM initialization failed:', error));
+  }, []);
 
   const handleParquetSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -48,6 +56,7 @@ export const useFileHandlers = ({ setData }: UseFileHandlersProps) => {
 
   return {
     isLoading,
+    wasmReady,
     handleParquetSelect,
     handleCSVSelect
   };

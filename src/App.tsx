@@ -29,11 +29,48 @@ function App() {
   useEffect(() => {
     if (data.length === 0) return;
 
-    const newColumns: Column[] = Object.keys(data[0]).map((key, index) => ({
-      key,
-      order: index
-    }));
-    
+    if (columns.length === 0) {
+      setColumns(Object.keys(data[0]).map((key, index) => ({ key, order: index })));
+      return;
+    }
+
+    const currentKeys = Object.keys(data[0]);
+    const previousKeys = columns.map(col => col.key);
+
+    // If keys are the same, no need to update
+    if (currentKeys.length === previousKeys.length &&
+      currentKeys.every(key => previousKeys.includes(key))) {
+      return;
+    }
+    console.log(currentKeys, previousKeys);
+
+    // Find added and removed columns
+    const addedKeys = currentKeys.filter(key => !previousKeys.includes(key));
+    const removedKeys = previousKeys.filter(key => !currentKeys.includes(key));
+    console.log(addedKeys, removedKeys);
+    console.log(columns);
+    let newColumns: Column[] = [];
+
+    if (addedKeys.length > 1 || removedKeys.length > 1) {
+      newColumns = currentKeys.map((key, index) => ({ key, order: index }));
+    } else if (addedKeys.length === 1 && removedKeys.length === 1) {
+      // If exactly one column was replaced, new column takes the order of the removed one
+      const removedColumn = columns.find(col => col.key === removedKeys[0])!;
+      newColumns = currentKeys.map(key => {
+        if (key === addedKeys[0]) {
+          return { key, order: removedColumn.order };
+        }
+        return columns.find(col => col.key === key)!;
+      });
+    } else {
+      // Otherwise, preserve existing orders and add new columns at the end
+      const maxOrder = Math.max(...columns.map(col => col.order), -1);
+      newColumns = currentKeys.map(key => {
+        const existingColumn = columns.find(col => col.key === key);
+        return existingColumn || { key, order: maxOrder + 1 };
+      });
+    }
+    console.log(newColumns);
     setColumns(newColumns);
   }, [data]);
 
@@ -69,8 +106,8 @@ function App() {
         <ThemeToggle />
       </div>
 
-      <ReactTable 
-        data={data} 
+      <ReactTable
+        data={data}
         columns={columns}
         setData={setData}
       />

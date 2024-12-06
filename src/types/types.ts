@@ -1,4 +1,4 @@
-import { Cell, Row } from "@tanstack/react-table";
+import { Row } from "@tanstack/react-table";
 
 export interface ColumnCell {
   getValue: () => any;

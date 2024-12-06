@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { ColumnCell } from '../types/types';
 
 interface TableCellProps {
@@ -6,13 +7,37 @@ interface TableCellProps {
 }
 
 export function TableCell({ cellProps, onEdit }: TableCellProps) {
-  const { row, column, getValue } = cellProps;
+  const [isEditing, setIsEditing] = useState(false);
+  const [value, setValue] = useState<string>('');
   
-  return (
-    <input
-      value={getValue()}
-      onChange={e => onEdit(row.index, column.id, e.target.value)}
-      className="table-cell-input"
-    />
-  );
+  // Initialize value when the cell data changes
+  useEffect(() => {
+    setValue(cellProps.getValue()?.toString() ?? '');
+  }, [cellProps]);
+
+  const handleDoubleClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    onEdit(cellProps.row.index, cellProps.column.id, value);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValue(e.target.value);
+  };
+
+  if (isEditing) {
+    return (
+      <input
+        value={value}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        autoFocus
+      />
+    );
+  }
+
+  return <div onDoubleClick={handleDoubleClick}>{value}</div>;
 } 

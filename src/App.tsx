@@ -1,16 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useReactTable, getCoreRowModel, flexRender, ColumnDef } from '@tanstack/react-table';
-import * as arrow from 'apache-arrow';
-import initWasm, {
-  Compression,
-  Table,
-  writeParquet,
-  WriterPropertiesBuilder,
-  readParquet,
-} from 'parquet-wasm';
+import initWasm from 'parquet-wasm';
 import { TableCell } from './components/TableCell';
 import { ColumnCell } from './types/types';
 import './App.css';
+import { exportToCSV, exportToParquet, importParquet, importCSV } from './utils/fileHandlers';
 
 const generateInitialData = () => [{
   field1: 'Sample Value 1',
@@ -65,112 +59,15 @@ function App() {
     getCoreRowModel: getCoreRowModel(),
   });
 
-  const exportToCSV = () => {
-    if (data.length === 0) return;
-
-    const headers = Object.keys(data[0]).join(',');
-    const rows = data.map(item => Object.values(item).join(',')).join('\n');
-    const csv = `${headers}\n${rows}`;
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'table-export.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
-
-  const exportToParquet = async () => {
-    try {
-      if (data.length === 0) return;
-
-      const arrowData: Record<string, string[]> = {};
-      Object.keys(data[0]).forEach(key => {
-        arrowData[key] = data.map(row => row[key]);
-      });
-
-      const table = arrow.tableFromArrays(arrowData);
-      const wasmTable = Table.fromIPCStream(arrow.tableToIPC(table, 'stream'));
-      const writerProperties = new WriterPropertiesBuilder()
-        .setCompression(Compression.ZSTD)
-        .build();
-      const parquetUint8Array = writeParquet(wasmTable, writerProperties);
-
-      const blob = new Blob([parquetUint8Array], { type: 'application/octet-stream' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'table-export.parquet';
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error exporting to Parquet:', error);
-      alert('Error exporting to Parquet. Check console for details.');
-    }
-  };
-
-  const importParquet = async (file: File) => {
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      const parquetTable = readParquet(uint8Array);
-      const arrowTable = arrow.tableFromIPC(parquetTable.intoIPCStream());
-
-      const importedData: Record<string, string>[] = [];
-      const columnNames = arrowTable.schema.fields.map(f => f.name);
-
-      for (let i = 0; i < arrowTable.numRows; i++) {
-        const row: Record<string, string> = {};
-        columnNames.forEach(colName => {
-          row[colName] = arrowTable.getChild(colName)?.get(i)?.toString() || '';
-        });
-        importedData.push(row);
-      }
-
-      setData(importedData);
-      return importedData;
-    } catch (error) {
-      console.error('Import error:', error);
-      throw error;
-    }
-  };
-
-  const importCSV = async (file: File) => {
-    try {
-      const text = await file.text();
-      const lines = text.split('\n');
-      const headers = lines[0].split(',').map(header => header.trim());
-      
-      const importedData: Record<string, string>[] = [];
-      
-      for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue; // Skip empty lines
-        
-        const values = lines[i].split(',').map(value => value.trim());
-        const row: Record<string, string> = {};
-        
-        headers.forEach((header, index) => {
-          row[header] = values[index] || '';
-        });
-        
-        importedData.push(row);
-      }
-
-      setData(importedData);
-      return importedData;
-    } catch (error) {
-      console.error('CSV import error:', error);
-      throw error;
-    }
-  };
-
   const handleParquetSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setIsLoading(true);
     importParquet(file)
+      .then(importedData => {
+        setData(importedData);
+      })
       .catch(error => {
         console.error('Error importing Parquet file:', error);
         alert('Error importing Parquet file. Check console for details.');
@@ -187,6 +84,9 @@ function App() {
 
     setIsLoading(true);
     importCSV(file)
+      .then(importedData => {
+        setData(importedData);
+      })
       .catch(error => {
         console.error('Error importing CSV file:', error);
         alert('Error importing CSV file. Check console for details.');
@@ -195,6 +95,24 @@ function App() {
         setIsLoading(false);
         event.target.value = '';
       });
+  };
+
+  const handleExportToCSV = () => {
+    try {
+      exportToCSV(data);
+    } catch (error) {
+      console.error('Error exporting to CSV:', error);
+      alert('Error exporting to CSV. Check console for details.');
+    }
+  };
+
+  const handleExportToParquet = async () => {
+    try {
+      await exportToParquet(data);
+    } catch (error) {
+      console.error('Error exporting to Parquet:', error);
+      alert('Error exporting to Parquet. Check console for details.');
+    }
   };
 
   return (
@@ -228,14 +146,14 @@ function App() {
           />
         </label>
         <button 
-          onClick={exportToCSV} 
+          onClick={handleExportToCSV} 
           className="export-button"
           disabled={isLoading}
         >
           Export as CSV
         </button>
         <button 
-          onClick={exportToParquet} 
+          onClick={handleExportToParquet} 
           className="export-button"
           disabled={!wasmReady || isLoading}
         >
